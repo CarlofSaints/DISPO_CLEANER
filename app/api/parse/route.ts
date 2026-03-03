@@ -18,7 +18,14 @@ function extractDate(cellValue: unknown): string {
   return match ? match[0] : str.slice(0, 50);
 }
 
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+
 function normaliseHeader(h: unknown): string {
+  if (h instanceof Date) {
+    const month = MONTH_NAMES[h.getUTCMonth()];
+    const year = h.getUTCFullYear();
+    return `${month}-${year}`;
+  }
   return String(h ?? "").trim();
 }
 
@@ -32,7 +39,11 @@ function isDateColumn(h: string): boolean {
 }
 
 function isRowBlank(row: unknown[]): boolean {
-  return row.every((c) => c === null || c === undefined || String(c).trim() === "");
+  return row.every((c) => {
+    if (c === null || c === undefined) return true;
+    if (c instanceof Date) return false; // date values are not blank
+    return String(c).trim() === "";
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -42,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: false });
+    const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
@@ -119,12 +130,13 @@ export async function POST(req: NextRequest) {
       (h) => !resolvedSet.has(h.toLowerCase())
     );
 
-    // Build row objects
+    // Build row objects — serialize Date objects to ISO strings
     const rows: Record<string, unknown>[] = dataRows.map((row) => {
       const obj: Record<string, unknown> = {};
       colIndices.forEach((ci, idx) => {
         const header = resolvedHeaders[idx] || `__col_${ci}`;
-        obj[header] = (row as unknown[])[ci] ?? null;
+        const val = (row as unknown[])[ci];
+        obj[header] = val instanceof Date ? val.toISOString() : val ?? null;
       });
       return obj;
     });
