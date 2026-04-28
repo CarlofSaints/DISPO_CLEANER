@@ -185,28 +185,28 @@ export default function AdminUsersPage() {
                 <label className="block text-sm font-medium text-oj-charcoal mb-1">Name</label>
                 <input
                   type="text" value={addName} onChange={(e) => setAddName(e.target.value)} required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-oj-charcoal mb-1">Surname</label>
                 <input
                   type="text" value={addSurname} onChange={(e) => setAddSurname(e.target.value)} required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-oj-charcoal mb-1">Email</label>
                 <input
                   type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-oj-charcoal mb-1">Role</label>
                 <select
                   value={addRole} onChange={(e) => setAddRole(e.target.value as "user" | "admin")}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>

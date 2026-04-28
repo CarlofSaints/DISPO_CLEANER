@@ -124,7 +124,16 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main
+      className="min-h-screen"
+      style={{
+        backgroundImage: "url(/oj-bg.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      }}
+    >
       {/* Header */}
       <div className="bg-oj-dark text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -155,7 +164,7 @@ export default function Home() {
 
       <div className="max-w-2xl mx-auto px-4 py-10">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          <div className="mb-6 bg-red-50/90 backdrop-blur-sm border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             {error}
           </div>
         )}
@@ -164,8 +173,8 @@ export default function Home() {
         {stage === "upload" && (
           <div className="space-y-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Upload DISPO Report</h1>
-              <p className="text-gray-500 text-sm mt-1">
+              <h1 className="text-2xl font-bold text-white drop-shadow-md">Upload DISPO Report</h1>
+              <p className="text-white/80 text-sm mt-1 drop-shadow-sm">
                 Upload the raw exported DISPO xlsx file — we&apos;ll clean and split it for you.
               </p>
             </div>
@@ -175,7 +184,7 @@ export default function Home() {
 
         {/* Group builder stage */}
         {stage === "group-builder" && parsed && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
             <div className="mb-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -198,7 +207,7 @@ export default function Home() {
 
         {/* Done stage */}
         {stage === "done" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center space-y-4">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center space-y-4">
             <div className="text-4xl text-oj-orange">&#10003;</div>
             <h2 className="text-xl font-bold text-gray-900">Files Generated</h2>
             <p className="text-gray-500 text-sm">

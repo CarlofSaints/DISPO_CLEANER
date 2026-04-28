@@ -30,7 +30,7 @@ export default function UploadZone({ onFile, loading }: Props) {
       onDrop={handleDrop}
       className={`
         border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all
-        ${dragging ? "border-orange-500 bg-orange-50" : "border-gray-300 hover:border-orange-400 hover:bg-gray-50"}
+        ${dragging ? "border-orange-500 bg-orange-50/90" : "border-white/40 bg-white/70 backdrop-blur-sm hover:border-orange-400 hover:bg-white/90"}
         ${loading ? "opacity-50 cursor-not-allowed" : ""}
       `}
     >

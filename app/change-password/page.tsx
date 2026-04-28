@@ -103,7 +103,7 @@ function ChangePasswordInner() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 />
               </div>
             )}
@@ -117,7 +117,7 @@ function ChangePasswordInner() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                  className="w-full px-3 py-2 pr-10 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                   placeholder="Min 6 characters"
                 />
                 <button
@@ -143,7 +143,7 @@ function ChangePasswordInner() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-oj-orange focus:border-transparent"
                 placeholder="Re-enter new password"
               />
             </div>
