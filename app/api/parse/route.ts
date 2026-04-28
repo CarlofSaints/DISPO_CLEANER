@@ -6,6 +6,8 @@ import {
   HEADER_ALIASES,
 } from "@/constants/headers";
 import type { ParsedDispo } from "@/types";
+import { requireLogin } from "@/lib/auth";
+import { appendLog } from "@/lib/activityLog";
 
 function extractDate(cellValue: unknown): string {
   if (!cellValue) return "";
@@ -26,7 +28,17 @@ function normaliseHeader(h: unknown): string {
     const year = h.getUTCFullYear();
     return `${month}-${year}`;
   }
-  return String(h ?? "").trim();
+  const str = String(h ?? "").trim();
+  // Normalise MonYY → Mon-YYYY (e.g. Nov25 → Nov-2025, Sep25 → Sep-2025)
+  const shortDate = str.match(
+    /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)(\d{2})$/i
+  );
+  if (shortDate) {
+    const mon = shortDate[1].charAt(0).toUpperCase() + shortDate[1].slice(1).toLowerCase();
+    const year = 2000 + parseInt(shortDate[2], 10);
+    return `${mon}-${year}`;
+  }
+  return str;
 }
 
 function resolveHeader(raw: string): string {
@@ -48,6 +60,10 @@ function isRowBlank(row: unknown[]): boolean {
 
 export async function POST(req: NextRequest) {
   try {
+    const userOrRes = await requireLogin(req);
+    if (userOrRes instanceof NextResponse) return userOrRes;
+    const user = userOrRes;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -151,18 +167,48 @@ export async function POST(req: NextRequest) {
     });
     const vendors = Array.from(vendorSet).sort();
 
+    // Build vendor name map — numeric vendors only, first Name value found per vendor
+    const vendorNames: Record<string, string> = {};
+    for (const vendor of vendors) {
+      if (/^\d+$/.test(vendor)) {
+        const vendorRow = rows.find((r) => String(r["Vendor"] ?? "").trim() === vendor);
+        if (vendorRow) {
+          vendorNames[vendor] = String(vendorRow["Name"] ?? "").trim().toUpperCase();
+        }
+      }
+    }
+
     const result: ParsedDispo = {
       sourceDate,
       headers: resolvedHeaders.filter((h) => h !== ""),
       rows,
       vendors,
+      vendorNames,
       unknownHeaders: [...new Set(unknownHeaders)],
       missingHeaders,
     };
 
+    await appendLog({
+      userId: user.id,
+      userEmail: user.email,
+      userName: `${user.name} ${user.surname}`,
+      action: "upload",
+      details: file.name,
+    });
+
     return NextResponse.json(result);
   } catch (err) {
     console.error(err);
+    const userOrRes = await requireLogin(req).catch(() => null);
+    if (userOrRes && !(userOrRes instanceof NextResponse)) {
+      appendLog({
+        userId: userOrRes.id,
+        userEmail: userOrRes.email,
+        userName: `${userOrRes.name} ${userOrRes.surname}`,
+        action: "error",
+        details: err instanceof Error ? err.message : "Parse failed",
+      }).catch(() => {});
+    }
     return NextResponse.json({ error: "Failed to parse file" }, { status: 500 });
   }
 }

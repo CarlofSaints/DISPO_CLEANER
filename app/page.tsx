@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth, authFetch } from "@/lib/useAuth";
 import UploadZone from "@/components/UploadZone";
 import HeaderMappingModal from "@/components/HeaderMappingModal";
 import MissingFieldsModal from "@/components/MissingFieldsModal";
@@ -9,6 +11,9 @@ import type { ParsedDispo, VendorGroup, GeneratedFile } from "@/types";
 type Stage = "upload" | "header-mapping" | "missing-fields" | "group-builder" | "done";
 
 export default function Home() {
+  const router = useRouter();
+  const { session, ready, logout } = useAuth();
+
   const [stage, setStage] = useState<Stage>("upload");
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -17,13 +22,20 @@ export default function Home() {
   const [headerMapping, setHeaderMapping] = useState<Record<string, string | null>>({});
   const [downloads, setDownloads] = useState<GeneratedFile[]>([]);
 
+  useEffect(() => {
+    if (ready && !session) router.replace("/login");
+  }, [ready, session, router]);
+
+  if (!ready) return null;
+  if (!session) return null;
+
   async function handleFile(file: File) {
     setError(null);
     setLoading(true);
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/parse", { method: "POST", body: form });
+      const res = await authFetch("/api/parse", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Parse failed");
 
@@ -62,12 +74,12 @@ export default function Home() {
     setStage("upload");
   }
 
-  async function handleRun(groups: VendorGroup[]) {
+  async function handleRun(groups: VendorGroup[], week: string, channel: string) {
     if (!parsed) return;
     setRunning(true);
     setError(null);
     try {
-      const res = await fetch("/api/generate", {
+      const res = await authFetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,6 +88,8 @@ export default function Home() {
           rows: parsed.rows,
           groups,
           headerMapping,
+          week,
+          channel,
         }),
       });
       const data = await res.json();
@@ -112,9 +126,31 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-black text-white px-6 py-4 flex items-center gap-3">
-        <span className="text-orange-500 font-black text-xl tracking-tight">DISPO</span>
-        <span className="text-white font-light text-xl tracking-tight">CLEANER</span>
+      <div className="bg-oj-dark text-white px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <img src="/oj-logo-white.png" alt="OuterJoin" className="h-7" />
+          <div className="h-5 w-px bg-white/20" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-oj-orange font-black text-lg tracking-tight">DISPO</span>
+            <span className="text-white font-light text-lg tracking-tight">CLEANER</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-300">
+            {session.name} {session.surname}
+          </span>
+          {session.role === "admin" && (
+            <a href="/admin/users" className="text-xs text-oj-orange hover:text-oj-orange-hover transition-colors">
+              Admin
+            </a>
+          )}
+          <button
+            onClick={() => { logout(); router.push("/login"); }}
+            className="text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-10">
@@ -151,19 +187,19 @@ export default function Home() {
                     )}
                   </p>
                 </div>
-                <button onClick={reset} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                <button onClick={reset} className="text-xs text-gray-400 hover:text-oj-charcoal transition-colors">
                   &larr; New file
                 </button>
               </div>
             </div>
-            <VendorGroupBuilder vendors={parsed.vendors} onRun={handleRun} running={running} />
+            <VendorGroupBuilder vendors={parsed.vendors} vendorNames={parsed.vendorNames ?? {}} onRun={handleRun} running={running} />
           </div>
         )}
 
         {/* Done stage */}
         {stage === "done" && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center space-y-4">
-            <div className="text-4xl">&#10003;</div>
+            <div className="text-4xl text-oj-orange">&#10003;</div>
             <h2 className="text-xl font-bold text-gray-900">Files Generated</h2>
             <p className="text-gray-500 text-sm">
               {downloads.length} file{downloads.length !== 1 ? "s" : ""} downloaded to your Downloads folder.
@@ -171,14 +207,14 @@ export default function Home() {
             <ul className="text-left space-y-2 max-w-sm mx-auto">
               {downloads.map((f) => (
                 <li key={f.filename} className="flex items-center gap-2 text-sm text-gray-700">
-                  <span className="text-green-500">&#8595;</span>
+                  <span className="text-oj-orange">&#8595;</span>
                   <span className="font-mono">{f.filename}</span>
                 </li>
               ))}
             </ul>
             <button
               onClick={reset}
-              className="mt-4 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors"
+              className="mt-4 px-6 py-2.5 bg-oj-orange hover:bg-oj-orange-hover text-white font-semibold rounded-xl text-sm transition-colors"
             >
               Clean another file
             </button>

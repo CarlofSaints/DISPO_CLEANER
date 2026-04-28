@@ -1,0 +1,11 @@
+Add auth, activity logging, and OJ branding
+
+- Invite-only user accounts (admin creates users, welcome email, forgot password)
+- Blob-backed activity log tracking uploads, generates, logins, errors
+- Admin pages: user management + activity log viewer with filters
+- Login page with OJ wallpaper background and white logo
+- All pages branded with OJ orange (#E8531E), charcoal, dark header bar
+- Existing parse/generate routes protected with requireLogin + logging
+- Seed route for initial admin account creation
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>

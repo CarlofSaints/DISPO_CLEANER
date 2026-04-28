@@ -36,7 +36,7 @@ export default function HeaderMappingModal({ unknownHeaders, onConfirm, onCancel
               </span>
               <span className="text-gray-400">→</span>
               <select
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                 value={mapping[h] ?? ""}
                 onChange={(e) => setMapping((prev) => ({ ...prev, [h]: e.target.value || null }))}
               >
