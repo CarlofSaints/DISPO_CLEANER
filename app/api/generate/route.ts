@@ -133,13 +133,13 @@ export async function POST(req: NextRequest) {
       files.push({ filename, base64: buf });
     }
 
-    await appendLog({
+    appendLog({
       userId: user.id,
       userEmail: user.email,
       userName: `${user.name} ${user.surname}`,
       action: "generate",
       details: `${files.length} file(s): ${files.map((f) => f.filename).join(", ")}`,
-    });
+    }).catch((err) => console.error("Generate log failed:", err));
 
     return NextResponse.json({ files });
   } catch (err) {

@@ -16,13 +16,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    await appendLog({
+    // Non-blocking — login must succeed even if logging fails
+    appendLog({
       userId: user.id,
       userEmail: user.email,
       userName: `${user.name} ${user.surname}`,
       action: "login",
       details: user.email,
-    });
+    }).catch((err) => console.error("Login log failed:", err));
 
     return NextResponse.json({
       id: user.id,

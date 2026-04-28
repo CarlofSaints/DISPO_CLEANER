@@ -188,13 +188,13 @@ export async function POST(req: NextRequest) {
       missingHeaders,
     };
 
-    await appendLog({
+    appendLog({
       userId: user.id,
       userEmail: user.email,
       userName: `${user.name} ${user.surname}`,
       action: "upload",
       details: file.name,
-    });
+    }).catch((err) => console.error("Upload log failed:", err));
 
     return NextResponse.json(result);
   } catch (err) {
