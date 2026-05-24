@@ -56,13 +56,14 @@ export async function POST(req: NextRequest) {
     users.push(newUser);
     await saveUsers(users);
 
-    await appendLog({
+    // Non-blocking — user creation must succeed even if logging fails
+    appendLog({
       userId: admin.id,
       userEmail: admin.email,
       userName: `${admin.name} ${admin.surname}`,
       action: "user_created",
       details: email,
-    });
+    }).catch((err) => console.error("Activity log failed:", err));
 
     // Non-blocking welcome email
     sendWelcomeEmail(email, name, tempPw).catch((err) =>
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: newUser.id, email: newUser.email });
   } catch (err) {
     console.error("Create user error:", err);
-    return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: `Failed to create user: ${msg}` }, { status: 500 });
   }
 }

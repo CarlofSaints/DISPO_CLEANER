@@ -25,13 +25,13 @@ export async function POST(req: NextRequest) {
     user.updatedAt = new Date().toISOString();
     await saveUsers(users);
 
-    await appendLog({
+    appendLog({
       userId: user.id,
       userEmail: user.email,
       userName: `${user.name} ${user.surname}`,
       action: "password_reset",
       details: user.email,
-    });
+    }).catch((err) => console.error("Password reset log failed:", err));
 
     sendPasswordResetEmail(user.email, user.name, tempPw).catch((err) =>
       console.error("Reset email failed:", err)
