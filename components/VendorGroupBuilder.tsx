@@ -19,12 +19,19 @@ function makeId() {
 }
 
 export default function VendorGroupBuilder({ vendors, vendorNames, onRun, running }: Props) {
-  const [groups, setGroups] = useState<VendorGroup[]>([{ id: makeId(), vendors: [] }]);
-  const [week, setWeek] = useState("");
-  const [channel, setChannel] = useState("");
-
   const realVendors = vendors.filter((v) => !isDC(v));
   const dcVendors = vendors.filter((v) => isDC(v));
+  const singleVendor = vendors.length <= 1 || realVendors.length <= 1;
+
+  // If single vendor, auto-select it into one group
+  const [groups, setGroups] = useState<VendorGroup[]>(() => {
+    if (singleVendor) {
+      return [{ id: makeId(), vendors: realVendors.length === 1 ? [realVendors[0]] : vendors.slice(0, 1) }];
+    }
+    return [{ id: makeId(), vendors: [] }];
+  });
+  const [week, setWeek] = useState("");
+  const [channel, setChannel] = useState("");
 
   function addGroup() {
     setGroups((prev) => [...prev, { id: makeId(), vendors: [] }]);
@@ -95,62 +102,66 @@ export default function VendorGroupBuilder({ vendors, vendorNames, onRun, runnin
         </div>
       )}
 
-      {/* Group builder */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">Select Vendor Groups</h2>
-        <button
-          onClick={addGroup}
-          className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-semibold transition-colors"
-        >
-          <span className="text-lg leading-none">+</span> Add report group
-        </button>
-      </div>
-
-      <div className="grid gap-4">
-        {groups.map((group, idx) => (
-          <div key={group.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700">
-                Report {idx + 1}
-                {group.vendors.length > 0 && (
-                  <span className="ml-2 text-orange-600">
-                    ({group.vendors.map((v) => vendorNames[v] ? `${vendorNames[v]} (${v})` : v).join(", ")})
-                  </span>
-                )}
-              </span>
-              {groups.length > 1 && (
-                <button
-                  onClick={() => removeGroup(group.id)}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {realVendors.map((vendor) => {
-                const selected = group.vendors.includes(vendor);
-                const name = vendorNames[vendor];
-                return (
-                  <button
-                    key={vendor}
-                    onClick={() => toggleVendor(group.id, vendor)}
-                    className={`
-                      px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
-                      ${selected
-                        ? "bg-orange-500 border-orange-500 text-white"
-                        : "bg-white border-gray-300 text-gray-700 hover:border-orange-400"
-                      }
-                    `}
-                  >
-                    {name ? `${name} (${vendor})` : vendor}
-                  </button>
-                );
-              })}
-            </div>
+      {/* Multi-vendor: group builder */}
+      {!singleVendor && (
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Select Vendor Groups</h2>
+            <button
+              onClick={addGroup}
+              className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-semibold transition-colors"
+            >
+              <span className="text-lg leading-none">+</span> Add report group
+            </button>
           </div>
-        ))}
-      </div>
+
+          <div className="grid gap-4">
+            {groups.map((group, idx) => (
+              <div key={group.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-gray-700">
+                    Report {idx + 1}
+                    {group.vendors.length > 0 && (
+                      <span className="ml-2 text-orange-600">
+                        ({group.vendors.map((v) => vendorNames[v] ? `${vendorNames[v]} (${v})` : v).join(", ")})
+                      </span>
+                    )}
+                  </span>
+                  {groups.length > 1 && (
+                    <button
+                      onClick={() => removeGroup(group.id)}
+                      className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {realVendors.map((vendor) => {
+                    const selected = group.vendors.includes(vendor);
+                    const name = vendorNames[vendor];
+                    return (
+                      <button
+                        key={vendor}
+                        onClick={() => toggleVendor(group.id, vendor)}
+                        className={`
+                          px-3 py-1.5 rounded-lg text-sm font-medium border transition-all
+                          ${selected
+                            ? "bg-orange-500 border-orange-500 text-white"
+                            : "bg-white border-gray-300 text-gray-700 hover:border-orange-400"
+                          }
+                        `}
+                      >
+                        {name ? `${name} (${vendor})` : vendor}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="pt-2">
         <button
@@ -166,7 +177,9 @@ export default function VendorGroupBuilder({ vendors, vendorNames, onRun, runnin
         >
           {running
             ? "Generating files..."
-            : `Run Cleaner — ${groups.filter((g) => g.vendors.length > 0).length} report(s)`}
+            : singleVendor
+              ? "Run Cleaner"
+              : `Run Cleaner — ${groups.filter((g) => g.vendors.length > 0).length} report(s)`}
         </button>
         {(!week || !channel) && (
           <p className="text-xs text-gray-400 text-center mt-2">
