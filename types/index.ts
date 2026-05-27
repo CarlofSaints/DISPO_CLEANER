@@ -6,6 +6,8 @@ export interface ParsedDispo {
   vendorNames: Record<string, string>; // numeric vendor → Name field value
   unknownHeaders: string[];     // headers in file not in canonical list or date pattern
   missingHeaders: string[];     // canonical headers not found in file (excluding date cols)
+  vendorNumber: string | null;  // numeric prefix from sheet name (e.g. "2667")
+  vendorNameFromSheet: string | null; // full sheet name for display
 }
 
 export interface HeaderMapping {

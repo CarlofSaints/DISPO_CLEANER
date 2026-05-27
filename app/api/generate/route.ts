@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
     if (userOrRes instanceof NextResponse) return userOrRes;
     const user = userOrRes;
 
-    const body: GenerateRequest = await req.json();
-    const { headers, rows, groups, headerMapping, week, channel } = body;
+    const body = await req.json();
+    const { headers, rows, groups, headerMapping, week, channel, vendorNumber } = body as GenerateRequest & { vendorNumber?: string };
 
     const finalHeaders = buildFinalHeaders(headers, headerMapping);
     const files: GeneratedFile[] = [];
@@ -110,24 +110,21 @@ export async function POST(req: NextRequest) {
       }
 
       // Step 4: file naming — VD {VendorName} ({vendorNumber}-{week}) {channel} - CLEANED
-      const numericVendors = group.vendors.filter((v) => /^\d+$/.test(v));
-      const vendorNumber = numericVendors.join("_");
+      const vNum = vendorNumber || "UNKNOWN";
 
-      // Get vendor name from first matching row's Name field
-      const firstVendorRow = rows.find((r) =>
-        numericVendors.includes(String(r["Vendor"] ?? "").trim())
-      );
-      const vendorName = firstVendorRow
-        ? String(firstVendorRow["Name"] ?? "").trim().toUpperCase()
-        : vendorNumber;
+      // Get vendor name from first row's Name field
+      const firstRow = groupRows[0];
+      const vendorName = firstRow
+        ? String(firstRow["Name"] ?? "").trim().toUpperCase()
+        : "";
 
-      const fileLabel = vendorName || vendorNumber;
-      const filename = `VD ${fileLabel} (${vendorNumber}-${week}) ${channel} - CLEANED.xlsx`;
-      const sheetName = vendorNumber.slice(0, 31);
+      const fileLabel = vendorName || vNum;
+      const filename = `VD ${fileLabel} (${vNum}-${week}) ${channel} - CLEANED.xlsx`;
+      const outSheetName = vNum.slice(0, 31);
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.utils.book_append_sheet(wb, ws, outSheetName);
 
       const buf = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
       files.push({ filename, base64: buf });

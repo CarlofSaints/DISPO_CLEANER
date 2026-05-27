@@ -82,6 +82,11 @@ export async function POST(req: NextRequest) {
 
     if (!raw.length) return NextResponse.json({ error: "Sheet is empty" }, { status: 400 });
 
+    // Extract vendor number from sheet name (numeric prefix before first space)
+    const vendorNumberMatch = sheetName.match(/^(\d+)/);
+    const vendorNumber = vendorNumberMatch ? vendorNumberMatch[1] : null;
+    const vendorNameFromSheet = sheetName;
+
     // Capture A1 date before any stripping
     const sourceDate = extractDate(raw[0]?.[0]);
 
@@ -186,6 +191,8 @@ export async function POST(req: NextRequest) {
       vendorNames,
       unknownHeaders: [...new Set(unknownHeaders)],
       missingHeaders,
+      vendorNumber,
+      vendorNameFromSheet,
     };
 
     appendLog({

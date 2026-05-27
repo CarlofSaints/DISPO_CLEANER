@@ -8,7 +8,7 @@ import MissingFieldsModal from "@/components/MissingFieldsModal";
 import VendorGroupBuilder from "@/components/VendorGroupBuilder";
 import type { ParsedDispo, VendorGroup, GeneratedFile } from "@/types";
 
-type Stage = "upload" | "header-mapping" | "missing-fields" | "group-builder" | "done";
+type Stage = "upload" | "vendor-confirm" | "header-mapping" | "missing-fields" | "group-builder" | "done";
 
 export default function Home() {
   const router = useRouter();
@@ -40,18 +40,22 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Parse failed");
 
       setParsed(data as ParsedDispo);
-
-      if (data.unknownHeaders?.length > 0) {
-        setStage("header-mapping");
-      } else if (data.missingHeaders?.length > 0) {
-        setStage("missing-fields");
-      } else {
-        setStage("group-builder");
-      }
+      setStage("vendor-confirm");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleVendorConfirm() {
+    if (!parsed) return;
+    if (parsed.unknownHeaders?.length > 0) {
+      setStage("header-mapping");
+    } else if (parsed.missingHeaders?.length > 0) {
+      setStage("missing-fields");
+    } else {
+      setStage("group-builder");
     }
   }
 
@@ -90,6 +94,7 @@ export default function Home() {
           headerMapping,
           week,
           channel,
+          vendorNumber: parsed.vendorNumber,
         }),
       });
       const data = await res.json();
@@ -182,6 +187,67 @@ export default function Home() {
           </div>
         )}
 
+        {/* Vendor confirmation stage */}
+        {stage === "vendor-confirm" && parsed && (
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center space-y-5">
+            {parsed.vendorNumber ? (
+              <>
+                <div className="text-5xl">&#128203;</div>
+                <h2 className="text-xl font-bold text-gray-900">Vendor Detected</h2>
+                <p className="text-gray-600">
+                  You&apos;re about to clean a DISPO for vendor number:
+                </p>
+                <p className="text-3xl font-black text-oj-orange tracking-wide">
+                  {parsed.vendorNumber}
+                </p>
+                {parsed.vendorNameFromSheet && parsed.vendorNameFromSheet !== parsed.vendorNumber && (
+                  <p className="text-sm text-gray-400">
+                    Sheet: {parsed.vendorNameFromSheet}
+                  </p>
+                )}
+                <p className="text-gray-600">Would you like to continue?</p>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={reset}
+                    className="px-5 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleVendorConfirm}
+                    className="px-5 py-2.5 bg-oj-orange hover:bg-oj-orange-hover text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl">&#9888;&#65039;</div>
+                <h2 className="text-xl font-bold text-red-600">No Vendor Number Found</h2>
+                <p className="text-gray-600">
+                  The sheet name contains no vendor number. The sheet name must start with
+                  a numeric vendor code (e.g. <span className="font-mono font-semibold">2667 ROBERT BOSCH</span>).
+                </p>
+                {parsed.vendorNameFromSheet && (
+                  <p className="text-sm text-gray-500">
+                    Current sheet name: <span className="font-mono font-semibold">{parsed.vendorNameFromSheet}</span>
+                  </p>
+                )}
+                <p className="text-gray-600">
+                  Please fix the sheet name in the source file and try again.
+                </p>
+                <button
+                  onClick={reset}
+                  className="mt-2 px-6 py-2.5 bg-oj-orange hover:bg-oj-orange-hover text-white font-semibold rounded-xl text-sm transition-colors"
+                >
+                  Back to Upload
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Group builder stage */}
         {stage === "group-builder" && parsed && (
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
@@ -190,7 +256,8 @@ export default function Home() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Build Reports</h1>
                   <p className="text-gray-500 text-sm mt-1">
-                    {parsed.rows.length.toLocaleString()} rows &mdash; {parsed.vendors.length} vendors found
+                    Vendor <span className="font-semibold text-oj-orange">{parsed.vendorNumber}</span>
+                    {" "}&mdash; {parsed.rows.length.toLocaleString()} rows
                     {parsed.sourceDate && (
                       <span className="ml-2 text-gray-400">&middot; Date: {parsed.sourceDate}</span>
                     )}
