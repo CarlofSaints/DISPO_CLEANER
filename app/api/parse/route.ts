@@ -70,7 +70,16 @@ export async function POST(req: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: true });
-    const sheetName = workbook.SheetNames[0];
+
+    // Find the data sheet — prefer a sheet whose name starts with digits (vendor number),
+    // otherwise fall back to the first sheet
+    let sheetName = workbook.SheetNames[0];
+    for (const name of workbook.SheetNames) {
+      if (/^\d+/.test(name.trim())) {
+        sheetName = name;
+        break;
+      }
+    }
     const sheet = workbook.Sheets[sheetName];
 
     // Convert to 2D array (raw)
@@ -82,10 +91,11 @@ export async function POST(req: NextRequest) {
 
     if (!raw.length) return NextResponse.json({ error: "Sheet is empty" }, { status: 400 });
 
-    // Extract vendor number from sheet name (numeric prefix before first space)
-    const vendorNumberMatch = sheetName.match(/^(\d+)/);
+    // Extract vendor number from sheet name (numeric prefix)
+    const trimmedSheetName = sheetName.trim();
+    const vendorNumberMatch = trimmedSheetName.match(/^(\d+)/);
     const vendorNumber = vendorNumberMatch ? vendorNumberMatch[1] : null;
-    const vendorNameFromSheet = sheetName;
+    const vendorNameFromSheet = trimmedSheetName;
 
     // Capture A1 date before any stripping
     const sourceDate = extractDate(raw[0]?.[0]);
