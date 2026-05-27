@@ -1,109 +1,119 @@
-// Canonical ordered header list
-// Covers both MB and Makro formats — buildFinalHeaders only outputs headers present in the file
-// Date columns (Mon-YYYY or MM-YYYY format) are dynamic and slot between Stk Margin and Curr Y/S
+// Output column order — exact labels as they appear in the cleaned file.
+// Only columns present in the input will appear in the output.
+// Date columns (Mon-YYYY or MM-YYYY format) are dynamic and slot between Order Unit and Curr Y/S.
 export const CANONICAL_HEADERS = [
-  "Vendor",
-  "Name",
-  "Article",
-  "Article Description",
-  "Site",
-  "Site Name",       // Makro
-  "PR ST",
-  "Status",          // Makro alias target
-  "RP",
-  "SOH",
-  "SOO",
-  "STO",
-  "SiT",
-  "PR QTY",          // Makro
-  "Free Stock",      // Makro
-  "Ret Ord",         // Makro
-  "MAC",
-  "Nett Cost",
-  "List Price",      // Makro
-  "Incl SP",
-  "Prom SP",
-  "SB",              // Makro
-  "TB",              // Makro
-  "Curr",
-  "Stk Margin",
-  // DATE COLUMNS GO HERE (dynamic)
-  "Curr Y/S",
-  "Prod Marg",
-  "Planned Margin",  // Makro
-  "CoCd",
-  "PayT",
-  "Description",
-  "Vend Prod",
-  "BMC",
-  "BMC Description", // Makro
-  "Class",           // Makro
-  "PBC",             // Makro
-  "R. Profile",
-  "MTyp",
-  "Stock In U",
-  "0 VAT Rate",
-  "Barcode",
-  "KMC",
-  "EMT",
-  "Buyer",
-  "Comp in BU",
-  "Order Unit",
-  "BUoM",
-  "SS",
-  "Seq No",          // Makro
-  "Exp Ind",
-  "ABC",
-  "UoM",
-  "Comp",
-  "OUn",
-  "Curr",
-  "End Date",
-  "Excl SP",
-  "Curr",
-  "Tally",
-  "Future Promo",    // Makro (also "Future Pro" in some MB files)
-  "Plan DSC",        // Makro
-  "Act DSC",
-  "RR",              // Makro
-  "Lst Recpt",
-  "Lst Sold",
-  "Dist.Prof.",      // Makro
+  "Vendor",            // A — vendor NUMBER
+  "Name",              // B — vendor name
+  "Vendor Prod Code",  // C
+  "P Term",            // D
+  "Article",           // E
+  "Article Desc",      // G
+  "Barcode",           // H
+  "BMC",               // I
+  "BMC Description",   // J
+  "PBC",               // K
+  "Order Unit",        // L
+  // DATE COLUMNS GO HERE (dynamic — e.g. Dec-2025 … May-2026, May-2025)
+  "Curr Y/S",          // T (after dates)
+  "UOM",               // U
+  "Compo",             // V
+  "Site",              // W
+  "Site Name",         // X
+  "Status",            // Y
+  "RP",                // Z
+  "SOH",               // AA
+  "SOO",               // AB
+  "SIT",               // AC
+  "PR QTY",            // AD
+  "MAC",               // AE
+  "Stock Margin",      // AF
+  "List Price",        // AG
+  "Nett Cost",         // AH
+  "End Date",          // AI
+  "Product Margin",    // AJ
+  "Planned Margin",    // AK
+  "Incl SP",           // AL
+  "Prom SP",           // AM
+  "SB",                // AN
+  "TB",                // AO
+  "Ret Ord",           // AP
+  "Plan DSC",          // AQ
+  "Act DSC",           // AR
+  "RR",                // AS
+  "Last Recv",         // AT
+  "Last Sold",         // AU
+  "Dist.Prof.",        // AV
 ];
 
-// Index where date columns are inserted (after "Stk Margin")
-export const DATE_COL_INSERT_AFTER = "Stk Margin";
+// Date columns are inserted after "Order Unit"
+export const DATE_COL_INSERT_AFTER = "Order Unit";
 export const DATE_COL_BEFORE = "Curr Y/S";
 
-// Known header aliases: key = lower-cased name found in file, value = correct canonical name
+// Known header aliases: key = lower-cased name found in file, value = output label.
+// Handles both MB and Makro DISPO formats.
 export const HEADER_ALIASES: Record<string, string> = {
-  // MB aliases
+  // Vendor / Name
+  "vendor name": "Name",            // DISPO "Vendor Name" → output "Name"
+
+  // Article description variants
+  "article description": "Article Desc",
+  "article desc": "Article Desc",
+  descriptio: "Article Desc",
+
+  // Vendor product code
+  "vend prod": "Vendor Prod Code",
+  "vendor prod code": "Vendor Prod Code",
+
+  // Payment term
+  payt: "P Term",
+  "p term": "P Term",
+
+  // UOM variants
+  uom: "UOM",
+  "uoм": "UOM",
+  "sell uom": "UOM",
+  "sell uoм": "UOM",
+
+  // Comp / Compo
+  comp: "Compo",
+  compo: "Compo",
+
+  // Status (MB uses "PR ST", Makro uses "Status")
+  "pr st": "Status",
+  status: "Status",
+
+  // SIT (MB uses "SiT")
+  sit: "SIT",
+
+  // Stock Margin (MB uses "Stk Margin")
+  "stk margin": "Stock Margin",
+  "stock margin": "Stock Margin",
+
+  // Product Margin (MB uses "Prod Marg")
+  "prod marg": "Product Margin",
+  "product margin": "Product Margin",
+
+  // Promo price variants
   promotional: "Prom SP",
   proms: "Prom SP",
   pro: "Prom SP",
   promo: "Prom SP",
-  "net cost": "Nett Cost",
-  "vendor name": "Vendor",
-  "sell uom": "UoM",
-  "sell uoм": "UoM",
-  descriptio: "Description",
 
-  // Makro aliases
-  "vendor prod code": "Vend Prod",
-  "p term": "PayT",
-  "article desc": "Article Description",
-  "article description": "Article Description",
-  uom: "UoM",
-  compo: "Comp",
-  status: "PR ST",
-  sit: "SiT",
-  "stock margin": "Stk Margin",
-  "product margin": "Prod Marg",
-  "last recv": "Lst Recpt",
-  "last sold": "Lst Sold",
-  "future pro": "Future Promo",
+  // Nett Cost variants
+  "net cost": "Nett Cost",
+
+  // Receipt / Sold dates (MB uses "Lst Recpt" / "Lst Sold")
+  "lst recpt": "Last Recv",
+  "last recv": "Last Recv",
+  "lst sold": "Last Sold",
+  "last sold": "Last Sold",
+
+  // Distribution profile
   "dist. prof.": "Dist.Prof.",
   "dist prof": "Dist.Prof.",
+
+  // Future promo (not in standard output — will land in overflow if present)
+  "future pro": "Future Promo",
 };
 
 // Regex to detect date-style columns:

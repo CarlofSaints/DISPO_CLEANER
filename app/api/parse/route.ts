@@ -5,7 +5,8 @@ import {
   DATE_COL_REGEX,
   HEADER_ALIASES,
 } from "@/constants/headers";
-import type { ParsedDispo } from "@/types";
+import type { ParsedDispo, StoredParseData } from "@/types";
+import { writeJson } from "@/lib/blob";
 import { requireLogin } from "@/lib/auth";
 import { appendLog } from "@/lib/activityLog";
 
@@ -186,8 +187,8 @@ export async function POST(req: NextRequest) {
     );
 
     // Identify missing canonical headers (date cols excluded from check)
-    // Account for aliases: if "Status" aliases to "PR ST" and "PR ST" is in the
-    // resolved set, then "Status" is covered — don't report it as missing.
+    // Account for aliases: if an alias source name matches a canonical header
+    // and the alias target is in the resolved set, that canonical is covered.
     const resolvedSet = new Set(resolvedHeaders.map((h) => h.toLowerCase()));
     const aliasCovered = new Set<string>();
     for (const [aliasKey, aliasTarget] of Object.entries(HEADER_ALIASES)) {
@@ -236,10 +237,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Store full row data server-side in blob so the client doesn't have to
+    // send it back (large files exceed the request body size limit).
+    const parseId = `temp/parse-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const filteredHeaders = resolvedHeaders.filter((h) => h !== "");
+    await writeJson<StoredParseData>(parseId, { headers: filteredHeaders, rows });
+
     const result: ParsedDispo = {
+      parseId,
       sourceDate,
-      headers: resolvedHeaders.filter((h) => h !== ""),
-      rows,
+      headers: filteredHeaders,
+      rowCount: rows.length,
       vendors,
       vendorNames,
       unknownHeaders: [...new Set(unknownHeaders)],

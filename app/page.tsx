@@ -73,9 +73,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceDate: parsed.sourceDate,
-          headers: parsed.headers,
-          rows: parsed.rows,
+          parseId: parsed.parseId,
           groups,
           headerMapping,
           week,
@@ -243,7 +241,7 @@ export default function Home() {
                   <h1 className="text-2xl font-bold text-gray-900">Build Reports</h1>
                   <p className="text-gray-500 text-sm mt-1">
                     Vendor <span className="font-semibold text-oj-orange">{parsed.vendorNumber}</span>
-                    {" "}&mdash; {parsed.rows.length.toLocaleString()} rows
+                    {" "}&mdash; {parsed.rowCount.toLocaleString()} rows
                     {parsed.sourceDate && (
                       <span className="ml-2 text-gray-400">&middot; Date: {parsed.sourceDate}</span>
                     )}

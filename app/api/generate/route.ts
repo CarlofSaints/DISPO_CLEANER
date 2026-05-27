@@ -6,7 +6,8 @@ import {
   DATE_COL_BEFORE,
   DATE_COL_REGEX,
 } from "@/constants/headers";
-import type { GenerateRequest, GeneratedFile } from "@/types";
+import type { GenerateRequest, GeneratedFile, StoredParseData } from "@/types";
+import { readJson } from "@/lib/blob";
 import { requireLogin } from "@/lib/auth";
 import { appendLog } from "@/lib/activityLog";
 
@@ -69,8 +70,18 @@ export async function POST(req: NextRequest) {
     if (userOrRes instanceof NextResponse) return userOrRes;
     const user = userOrRes;
 
-    const body = await req.json();
-    const { headers, rows, groups, headerMapping, week, channel, vendorNumber } = body as GenerateRequest & { vendorNumber?: string };
+    const body = (await req.json()) as GenerateRequest;
+    const { parseId, groups, headerMapping, week, channel, vendorNumber } = body;
+
+    // Read full row data from blob (stored by parse route)
+    const stored = await readJson<StoredParseData | null>(parseId, null);
+    if (!stored) {
+      return NextResponse.json(
+        { error: "Parsed data expired or not found. Please re-upload the file." },
+        { status: 404 }
+      );
+    }
+    const { headers, rows } = stored;
 
     const finalHeaders = buildFinalHeaders(headers, headerMapping);
     const files: GeneratedFile[] = [];
