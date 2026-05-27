@@ -3,12 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, authFetch } from "@/lib/useAuth";
 import UploadZone from "@/components/UploadZone";
-import HeaderMappingModal from "@/components/HeaderMappingModal";
-import MissingFieldsModal from "@/components/MissingFieldsModal";
+import FieldReview from "@/components/FieldReview";
 import VendorGroupBuilder from "@/components/VendorGroupBuilder";
 import type { ParsedDispo, VendorGroup, GeneratedFile } from "@/types";
 
-type Stage = "upload" | "vendor-confirm" | "header-mapping" | "missing-fields" | "group-builder" | "done";
+type Stage = "upload" | "vendor-confirm" | "field-review" | "group-builder" | "done";
 
 export default function Home() {
   const router = useRouter();
@@ -50,43 +49,12 @@ export default function Home() {
 
   function handleVendorConfirm() {
     if (!parsed) return;
-    if (parsed.unknownHeaders?.length > 0) {
-      setStage("header-mapping");
-    } else if (parsed.missingHeaders?.length > 0) {
-      setStage("missing-fields");
-    } else {
-      setStage("group-builder");
-    }
+    // Always go to field review so the user can see/verify field matching
+    setStage("field-review");
   }
 
-  function handleHeaderMappingConfirm(mapping: Record<string, string | null>) {
+  function handleFieldReviewConfirm(mapping: Record<string, string | null>) {
     setHeaderMapping(mapping);
-    // Recompute missing headers: remove any canonical headers the user just mapped to
-    const mappedTargets = new Set(
-      Object.values(mapping).filter(Boolean).map((v) => v!.toLowerCase())
-    );
-    const stillMissing = (parsed?.missingHeaders ?? []).filter(
-      (h) => !mappedTargets.has(h.toLowerCase())
-    );
-    if (stillMissing.length > 0) {
-      setStage("missing-fields");
-    } else {
-      setStage("group-builder");
-    }
-  }
-
-  function handleMissingFieldsContinue(extraMapping?: Record<string, string | null>) {
-    if (extraMapping) {
-      // Merge: extraMapping is { canonicalHeader: unknownFileHeader }
-      // Convert to { unknownFileHeader: canonicalHeader } to match headerMapping format
-      const merged = { ...headerMapping };
-      for (const [canonical, fileHeader] of Object.entries(extraMapping)) {
-        if (fileHeader) {
-          merged[fileHeader] = canonical;
-        }
-      }
-      setHeaderMapping(merged);
-    }
     setStage("group-builder");
   }
 
@@ -316,36 +284,16 @@ export default function Home() {
         )}
       </div>
 
-      {/* Modals */}
-      {stage === "header-mapping" && parsed && (
-        <HeaderMappingModal
-          unknownHeaders={parsed.unknownHeaders}
-          onConfirm={handleHeaderMappingConfirm}
+      {/* Field review modal — always shown after vendor confirm */}
+      {stage === "field-review" && parsed && (
+        <FieldReview
+          fileHeaders={parsed.headers}
+          unknownHeaders={parsed.unknownHeaders ?? []}
+          missingHeaders={parsed.missingHeaders ?? []}
+          onConfirm={handleFieldReviewConfirm}
           onCancel={handleCancel}
         />
       )}
-
-      {stage === "missing-fields" && parsed && (() => {
-        // Recompute missing fields, excluding any that were mapped in HeaderMappingModal
-        const mappedTargets = new Set(
-          Object.values(headerMapping).filter(Boolean).map((v) => v!.toLowerCase())
-        );
-        const stillMissing = parsed.missingHeaders.filter(
-          (h) => !mappedTargets.has(h.toLowerCase())
-        );
-        // Unmapped unknowns: file headers that were skipped (not mapped to anything)
-        const unmapped = (parsed.unknownHeaders ?? []).filter(
-          (h) => !headerMapping[h]
-        );
-        return (
-          <MissingFieldsModal
-            missingFields={stillMissing}
-            unmappedUnknowns={unmapped}
-            onContinue={handleMissingFieldsContinue}
-            onCancel={handleCancel}
-          />
-        );
-      })()}
     </main>
   );
 }
