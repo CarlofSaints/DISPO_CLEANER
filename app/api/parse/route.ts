@@ -91,12 +91,6 @@ export async function POST(req: NextRequest) {
 
     if (!raw.length) return NextResponse.json({ error: "Sheet is empty" }, { status: 400 });
 
-    // Extract vendor number from sheet name (numeric prefix)
-    const trimmedSheetName = sheetName.trim();
-    const vendorNumberMatch = trimmedSheetName.match(/^(\d+)/);
-    const vendorNumber = vendorNumberMatch ? vendorNumberMatch[1] : null;
-    const vendorNameFromSheet = trimmedSheetName;
-
     // Capture A1 date before any stripping
     const sourceDate = extractDate(raw[0]?.[0]);
 
@@ -110,6 +104,42 @@ export async function POST(req: NextRequest) {
     }
     if (headerRowIdx === -1) {
       return NextResponse.json({ error: "Could not find VENDOR header row" }, { status: 400 });
+    }
+
+    // Extract vendor number:
+    // 1. Scan header row for a "Vendor" column and grab the first data row's value
+    // 2. Fall back to sheet name numeric prefix
+    let vendorNumber: string | null = null;
+    let vendorNameFromSheet = sheetName.trim();
+
+    // Strategy 1: Find "Vendor" in the header row, read the first data value
+    const headerCells = (raw[headerRowIdx] as unknown[]);
+    const vendorColIdx = headerCells.findIndex(
+      (c) => String(c ?? "").trim().toUpperCase() === "VENDOR"
+    );
+    if (vendorColIdx !== -1) {
+      // Look at the first non-blank data row after the header
+      for (let r = headerRowIdx + 1; r < raw.length && r < headerRowIdx + 10; r++) {
+        const row = raw[r] as unknown[];
+        const val = String(row[vendorColIdx] ?? "").trim();
+        if (val !== "") {
+          const numMatch = val.match(/^(\d+)/);
+          if (numMatch) {
+            vendorNumber = numMatch[1];
+            vendorNameFromSheet = val;
+          }
+          break;
+        }
+      }
+    }
+
+    // Strategy 2: Fall back to sheet name numeric prefix
+    if (!vendorNumber) {
+      const sheetMatch = sheetName.trim().match(/^(\d+)/);
+      if (sheetMatch) {
+        vendorNumber = sheetMatch[1];
+        vendorNameFromSheet = sheetName.trim();
+      }
     }
 
     // Slice from header row down
