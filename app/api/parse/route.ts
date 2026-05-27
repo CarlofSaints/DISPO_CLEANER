@@ -186,9 +186,22 @@ export async function POST(req: NextRequest) {
     );
 
     // Identify missing canonical headers (date cols excluded from check)
+    // Account for aliases: if "Status" aliases to "PR ST" and "PR ST" is in the
+    // resolved set, then "Status" is covered — don't report it as missing.
     const resolvedSet = new Set(resolvedHeaders.map((h) => h.toLowerCase()));
+    const aliasCovered = new Set<string>();
+    for (const [aliasKey, aliasTarget] of Object.entries(HEADER_ALIASES)) {
+      if (resolvedSet.has(aliasTarget.toLowerCase())) {
+        const matchingCanonical = CANONICAL_HEADERS.find(
+          (h) => h.toLowerCase() === aliasKey
+        );
+        if (matchingCanonical) {
+          aliasCovered.add(matchingCanonical.toLowerCase());
+        }
+      }
+    }
     const missingHeaders = CANONICAL_HEADERS.filter(
-      (h) => !resolvedSet.has(h.toLowerCase())
+      (h) => !resolvedSet.has(h.toLowerCase()) && !aliasCovered.has(h.toLowerCase())
     );
 
     // Build row objects — serialize Date objects to ISO strings

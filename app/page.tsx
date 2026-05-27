@@ -61,14 +61,32 @@ export default function Home() {
 
   function handleHeaderMappingConfirm(mapping: Record<string, string | null>) {
     setHeaderMapping(mapping);
-    if (parsed?.missingHeaders && parsed.missingHeaders.length > 0) {
+    // Recompute missing headers: remove any canonical headers the user just mapped to
+    const mappedTargets = new Set(
+      Object.values(mapping).filter(Boolean).map((v) => v!.toLowerCase())
+    );
+    const stillMissing = (parsed?.missingHeaders ?? []).filter(
+      (h) => !mappedTargets.has(h.toLowerCase())
+    );
+    if (stillMissing.length > 0) {
       setStage("missing-fields");
     } else {
       setStage("group-builder");
     }
   }
 
-  function handleMissingFieldsContinue() {
+  function handleMissingFieldsContinue(extraMapping?: Record<string, string | null>) {
+    if (extraMapping) {
+      // Merge: extraMapping is { canonicalHeader: unknownFileHeader }
+      // Convert to { unknownFileHeader: canonicalHeader } to match headerMapping format
+      const merged = { ...headerMapping };
+      for (const [canonical, fileHeader] of Object.entries(extraMapping)) {
+        if (fileHeader) {
+          merged[fileHeader] = canonical;
+        }
+      }
+      setHeaderMapping(merged);
+    }
     setStage("group-builder");
   }
 
@@ -307,13 +325,27 @@ export default function Home() {
         />
       )}
 
-      {stage === "missing-fields" && parsed && (
-        <MissingFieldsModal
-          missingFields={parsed.missingHeaders}
-          onContinue={handleMissingFieldsContinue}
-          onCancel={handleCancel}
-        />
-      )}
+      {stage === "missing-fields" && parsed && (() => {
+        // Recompute missing fields, excluding any that were mapped in HeaderMappingModal
+        const mappedTargets = new Set(
+          Object.values(headerMapping).filter(Boolean).map((v) => v!.toLowerCase())
+        );
+        const stillMissing = parsed.missingHeaders.filter(
+          (h) => !mappedTargets.has(h.toLowerCase())
+        );
+        // Unmapped unknowns: file headers that were skipped (not mapped to anything)
+        const unmapped = (parsed.unknownHeaders ?? []).filter(
+          (h) => !headerMapping[h]
+        );
+        return (
+          <MissingFieldsModal
+            missingFields={stillMissing}
+            unmappedUnknowns={unmapped}
+            onContinue={handleMissingFieldsContinue}
+            onCancel={handleCancel}
+          />
+        );
+      })()}
     </main>
   );
 }
