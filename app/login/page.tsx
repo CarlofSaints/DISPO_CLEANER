@@ -153,6 +153,24 @@ export default function LoginPage() {
               Forgot password?
             </button>
           </div>
+
+          <div className="relative flex items-center gap-3 mt-4 mb-2">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const hubUrl = process.env.NEXT_PUBLIC_IRAM_HUB_URL || "https://iram-hub.vercel.app";
+              const callback = `${window.location.origin}/sso/callback`;
+              window.location.href = `${hubUrl}/login?redirect=${encodeURIComponent(callback)}&module=dispo`;
+            }}
+            className="w-full py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            Sign in with iRam Hub
+          </button>
         </div>
       </div>
 
