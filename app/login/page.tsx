@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { session, ready, login } = useAuth();
+  const isLocal = searchParams.get("local") === "true";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,13 +23,42 @@ export default function LoginPage() {
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  // SSO auto-redirect (unless ?local=true)
   useEffect(() => {
-    if (ready && session) router.replace("/");
-  }, [ready, session, router]);
+    if (!ready) return;
+    if (session) { router.replace("/"); return; }
+    if (isLocal) return;
+
+    const hubUrl = process.env.NEXT_PUBLIC_IRAM_HUB_URL || "https://iram-hub.vercel.app";
+    const callback = `${window.location.origin}/sso/callback`;
+    window.location.href = `${hubUrl}/login?redirect=${encodeURIComponent(callback)}&module=dispo`;
+  }, [ready, session, isLocal, router]);
 
   if (!ready) return null;
   if (session) return null;
 
+  // If SSO mode, show redirect message
+  if (!isLocal) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-400 text-sm mb-4">Redirecting to iRam Hub...</div>
+          <button
+            onClick={() => {
+              const hubUrl = process.env.NEXT_PUBLIC_IRAM_HUB_URL || "https://iram-hub.vercel.app";
+              const callback = `${window.location.origin}/sso/callback`;
+              window.location.href = `${hubUrl}/login?redirect=${encodeURIComponent(callback)}&module=dispo`;
+            }}
+            className="text-sm text-oj-orange hover:underline"
+          >
+            Click here if not redirected
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Local login form (emergency backdoor via ?local=true)
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -86,9 +118,14 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <span className="text-oj-orange font-black text-xl tracking-tight">DISPO</span>
             <span className="text-oj-charcoal font-light text-xl tracking-tight ml-1">CLEANER</span>
+          </div>
+
+          {/* Emergency local login notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 text-center mb-4">
+            Emergency local login — normal access is via iRam Hub
           </div>
 
           {error && (
@@ -153,24 +190,6 @@ export default function LoginPage() {
               Forgot password?
             </button>
           </div>
-
-          <div className="relative flex items-center gap-3 mt-4 mb-2">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">or</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              const hubUrl = process.env.NEXT_PUBLIC_IRAM_HUB_URL || "https://iram-hub.vercel.app";
-              const callback = `${window.location.origin}/sso/callback`;
-              window.location.href = `${hubUrl}/login?redirect=${encodeURIComponent(callback)}&module=dispo`;
-            }}
-            className="w-full py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-lg text-sm hover:bg-gray-50 transition-colors"
-          >
-            Sign in with iRam Hub
-          </button>
         </div>
       </div>
 
@@ -227,5 +246,13 @@ export default function LoginPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 text-sm">Loading...</div></div>}>
+      <LoginInner />
+    </Suspense>
   );
 }
