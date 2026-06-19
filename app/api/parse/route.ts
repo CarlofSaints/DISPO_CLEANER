@@ -10,6 +10,18 @@ import { writeJson } from "@/lib/blob";
 import { requireLogin } from "@/lib/auth";
 import { appendLog } from "@/lib/activityLog";
 
+// Format a Date cell back to DD.MM.YYYY to match the raw DISPO format.
+// SheetJS (cellDates:true) builds Date objects from LOCAL components, so local
+// getters exactly reverse that — and avoid the .toISOString() UTC day-shift that
+// turned dates like 10.03.2024 into "2024-03-09T22:00:00.000Z" (and produced a
+// mix of ISO strings and DD.MM.YYYY text within the same column).
+function formatDateCell(d: Date): string {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
 function extractDate(cellValue: unknown): string {
   if (!cellValue) return "";
   const str = String(cellValue);
@@ -211,7 +223,7 @@ export async function POST(req: NextRequest) {
       colIndices.forEach((ci, idx) => {
         const header = resolvedHeaders[idx] || `__col_${ci}`;
         const val = (row as unknown[])[ci];
-        obj[header] = val instanceof Date ? val.toISOString() : val ?? null;
+        obj[header] = val instanceof Date ? formatDateCell(val) : val ?? null;
       });
       return obj;
     });
